@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ArnavAdmin</title>
+  <link rel="shortcut icon" href="Image/arnavlogo.png" type="image/x-icon">
+
+  <style>
+    /* Full-page background */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      height: 100vh;
+      background-image: url('Image/newBg.png'); /* your background */
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+    }
+
+    /* Top-left video */
+    #topVideo {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      width: 150px;
+      height: auto;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 9999;
+    }
+
+    /* Container for login/dashboard */
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      width: 100%;
+    }
+
+    /* Flex container for tagline + login box */
+    .loginContainer {
+      display: flex;              /* horizontal layout */
+      align-items: center;        /* vertical alignment */
+      justify-content: center;    /* center horizontally */
+      gap: 40px;                  /* space between tagline and login box */
+    }
+
+    /* Tagline styling */
+    .taglineFont {
+      font-size: 36px;
+      font-style: italic;
+      font-weight: bold;
+      text-shadow: 0 0 8px rgba(0,0,0,0.7), 0 0 14px rgba(0,0,0,0.6);
+      color: #ffffff;
+      max-width: 250px;
+    }
+
+    /* Login box styling */
+    #loginBox {
+      width: 320px;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.9); /* semi-transparent white */
+      border-radius: 12px;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+      text-align: center;
+      color: #333;
+    }
+
+    #loginBox h2 { margin-bottom: 20px; }
+
+    #loginBox input[type="email"],
+    #loginBox input[type="password"] {
+      width: 90%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    #loginBox input[type="submit"] {
+      width: 100%;
+      padding: 10px;
+      background-color: #2d8f3a;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    #loginBox input[type="submit"]:hover {
+      background-color: #256f2e;
+    }
+
+    #forgotPasswordLink {
+      display: inline-block;
+      margin-top: 10px;
+      color: #2d8f3a;
+      text-decoration: none;
+      font-size: 14px;
+    }
+
+    #forgotPasswordLink:hover { text-decoration: underline; }
+
+    /* Dashboard styling */
+    #dashboard {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #adminName {
+      font-size: 26px;
+      font-weight: bold;
+      color: #000000; /* black for welcome admin */
+    }
+
+    #dashboardTagline {
+      font-size: 36px;
+      font-style: italic;
+      font-weight: bold;
+      color: #ffffff; /* tagline stays white */
+      text-shadow: 0 0 8px rgba(0,0,0,0.7), 0 0 14px rgba(0,0,0,0.6);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Top-left video -->
+  <video id="topVideo" autoplay muted loop>
+    <source src="newvid.mp4" type="video/mp4">
+  </video>
+
+  <div class="container">
+    <!-- Tagline + Login -->
+    <div class="loginContainer">
+      <div class="taglineFont" id="tagline">Your guide right before your eyes</div>
+
+      <div id="loginBox">
+        <h2>Arnav Admin</h2>
+        <form id="loginForm">
+          <input type="email" id="email" placeholder="Email" required><br>
+          <input type="password" id="password" placeholder="Password" required><br>
+          <input type="submit" value="Log in"><br>
+          <a href="#" id="forgotPasswordLink">Forgot Password?</a>
+        </form>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard">
+      <h2 id="adminName">Welcome, Admin!</h2>
+      <div id="dashboardTagline">Your guide right before your eyes</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCcWQRObUHaolagsZSgIzC36uGv7vqL9z0",
+      authDomain: "arnav-50d57.firebaseapp.com",
+      databaseURL: "https://arnav-50d57-default-rtdb.firebaseio.com",
+      projectId: "arnav-50d57",
+      storageBucket: "arnav-50d57.appspot.com",
+      messagingSenderId: "264853465989",
+      appId: "1:264853465989:web:0f9056a3c714c6ce3cb2ec",
+      measurementId: "G-TFB7T6DG0R"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Login handler
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        const docRef = doc(db, "admins", user.uid);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists() && docSnap.data().role === "admin") {
+          const adminName = docSnap.data().name || "Admin";
+          localStorage.setItem("adminName", adminName);
+
+          document.getElementById("loginBox").style.display = "none";
+          document.getElementById("tagline").style.display = "none";
+          document.getElementById("dashboard").style.display = "flex";
+          document.getElementById("adminName").textContent = `Welcome, ${adminName}!`;
+
+          setTimeout(() => { window.location.href = "home.html"; }, 10000);
+        } else {
+          alert("❌ You are not an admin!");
+          await signOut(auth);
+        }
+      } catch (error) {
+        alert("Login failed: " + error.message);
+      }
+    });
+
+    // Forgot password
+    document.getElementById("forgotPasswordLink").addEventListener("click", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      if (!email) { alert("Please enter your email first."); return; }
+      try { await sendPasswordResetEmail(auth, email); alert("Password reset email sent!"); }
+      catch (error) { alert("❌ " + error.message); }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+body{
+      background-image: url(Image/CCA\ \(1\).jpg);  
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-size: 100% 100%;
+     }
+
+     .login-box {
+      border-radius: 25px;
+      background-color: rgb(127, 190, 127);
+      width: 220px;
+      border: 15px rgb(127, 190, 127);
+      padding: 50px;
+      margin: 20px;
+    }
+     .container{
+        width: 300;
+        height: auto;
+        position: relative;
+     }
+
+    .container.boxLogin {
+        width: 300;
+        height: 400;
+
+    }
+
+   
+    .container .login-box h2 {
+        position: relative;
+        margin-bottom: 20px;
+      }
+  
+      .login-box input[type="email"],
+      .login-box input[type="password"] {
+        width: 200px;
+        padding: 10px;
+        margin: 10px 0;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+      }
+  
+      .login-box input[type="submit"] {
+        padding: 10px 20px;
+        border: none;
+        background-color: #614caf;
+        color: white;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+    
+      .overlay a {
+      display: block;
+      margin-top: 10px;
+      color: black;
+      text-decoration: none;
+    }
+      
+     
+        .video {
+        position: fixed;
+        top: 100px;
+        left: 100px;
+        width: 100px;   /* Adjust size */
+        height: 10px;
+        z-index: 90;
+        border: 2px solid white;
+        border-radius: 8px;
+    }
+  

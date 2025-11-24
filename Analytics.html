@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title> Admin Analytics</title>
+  <link rel="shortcut icon" href="Image/arnavlogo.png" type="image/x-icon">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      color: #222;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #375534;
+      color: white;
+      padding: 10px 15px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo-video { width: 70px; height: 70px; border-radius: 10px; object-fit: cover; }
+    h2 { margin: 0; font-size: 26px; }
+
+    .profile-container { display: flex; align-items: center; gap: 5px; }
+    .profile-initials {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background: white;
+      color: black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      border: 2px solid white;
+      font-size: 22px;
+    }
+
+    .home-btn {
+      background: white;
+      color: #0b0c0c;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .home-btn:hover { background: #e3e3e3; }
+
+    main { padding: 120px 40px 80px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 40px; }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      text-align: center;
+      transition: 0.3s;
+    }
+
+    .card:hover { transform: translateY(-3px); box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
+    .card h2 { font-size: 2rem; margin: 10px 0; color: #007bff; }
+
+    .chart-container, .activity {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      margin-top: 40px;
+    }
+
+    footer { text-align: center; color: #777; padding: 15px; font-size: 0.9rem; margin-top: 60px; }
+
+    .floating-download {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 12px 20px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+      transition: background 0.2s;
+      z-index: 20;
+    }
+
+    .floating-download:hover { background: #0056b3; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="header-left">
+      <video class="logo-video" autoplay loop muted playsinline>
+        <source src="newvid.mp4" type="video/mp4">
+      </video>
+      <h2>Analytics</h2>
+    </div>
+
+    <div class="profile-container">
+      <div id="adminInitials" class="profile-initials">A</div>
+      <button class="home-btn" onclick="location.href='home.html'">Home</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="cards">
+      <div class="card">
+        <h3>Total Users</h3>
+        <h2 id="totalUsers">0</h2>
+      </div>
+      <div class="card">
+        <h3>Total Registrations</h3>
+        <h2 id="totalRegistrations">0</h2>
+      </div>
+      <div class="card">
+        <h3>New Registrations Today</h3>
+        <h2 id="todayRegistrations">0</h2>
+      </div>
+      <div class="card">
+        <h3>Active Users (7 days)</h3>
+        <h2 id="activeUsers">0</h2>
+      </div>
+      <div class="card">
+        <h3>Inactive Users (7 days)</h3>
+        <h2 id="inactiveUsers">0</h2>
+      </div>
+      <div class="card">
+        <h3>Most Used Bot</h3>
+        <h2 id="mostUsedBot">N/A</h2>
+        <p id="mostUsedBotCount"></p>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="analyticsChart" height="120"></canvas>
+    </div>
+
+    <div class="activity">
+      <h3>🕒 Recent Registrations</h3>
+      <ul id="activityFeed"></ul>
+    </div>
+  </main>
+
+  <button class="floating-download" onclick="downloadExcel()">⬇️ Download Excel</button>
+
+  <footer>© 2025 Arnav Admin Dashboard — powered by Firebase</footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCcWQRObUHaolagsZSgIzC36uGv7vqL9z0",
+      authDomain: "arnav-50d57.firebaseapp.com",
+      projectId: "arnav-50d57",
+      storageBucket: "arnav-50d57.appspot.com",
+      messagingSenderId: "264853465989",
+      appId: "1:264853465989:web:0f9056a3c714c6ce3cb2ec"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Fetch analytics data
+    async function loadAnalytics() {
+      try {
+        const usersSnap = await getDocs(collection(db, "Users"));
+        const users = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const totalUsers = users.length;
+        const totalRegistrations = totalUsers;
+        const today = new Date();
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(today.getDate() - 7);
+
+        const todayRegistrations = users.filter(u => {
+          const created = u.createdAt?.toDate ? u.createdAt.toDate() : new Date(u.createdAt);
+          return created.toDateString() === today.toDateString();
+        }).length;
+
+        const activeUsers = users.filter(u => {
+          const lastLogin = u.lastLogin?.toDate ? u.lastLogin.toDate() : new Date(u.lastLogin);
+          return lastLogin >= sevenDaysAgo;
+        }).length;
+
+        const inactiveUsers = totalUsers - activeUsers;
+
+        const botUsage = {};
+        users.forEach(u => { if (u.botName) botUsage[u.botName] = (botUsage[u.botName] || 0) + 1; });
+
+        let mostUsedBot = "N/A", maxCount = 0;
+        for (const [bot, count] of Object.entries(botUsage)) {
+          if (count > maxCount) { mostUsedBot = bot; maxCount = count; }
+        }
+
+        document.getElementById("totalUsers").innerText = totalUsers;
+        document.getElementById("totalRegistrations").innerText = totalRegistrations;
+        document.getElementById("todayRegistrations").innerText = todayRegistrations;
+        document.getElementById("activeUsers").innerText = activeUsers;
+        document.getElementById("inactiveUsers").innerText = inactiveUsers;
+        document.getElementById("mostUsedBot").innerText = mostUsedBot;
+        document.getElementById("mostUsedBotCount").innerText = mostUsedBot !== "N/A" ? `Used ${maxCount} times` : "";
+
+        const feed = document.getElementById("activityFeed");
+        feed.innerHTML = "";
+        users
+          .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+          .slice(0, 5)
+          .forEach(u => {
+            const li = document.createElement("li");
+            const date = u.createdAt?.toDate ? u.createdAt.toDate() : new Date(u.createdAt);
+            li.textContent = `${u.name || "Unknown"} — ${u.studentId || "N/A"} (${date.toLocaleString()})`;
+            feed.appendChild(li);
+          });
+
+        const registrationsByDate = {};
+        users.forEach(u => {
+          const created = u.createdAt?.toDate ? u.createdAt.toDate() : new Date(u.createdAt);
+          const key = created.toISOString().split("T")[0];
+          registrationsByDate[key] = (registrationsByDate[key] || 0) + 1;
+        });
+
+        const labels = Object.keys(registrationsByDate).slice(-7);
+        const values = Object.values(registrationsByDate).slice(-7);
+        const ctx = document.getElementById("analyticsChart").getContext("2d");
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: labels,
+            datasets: [{
+              label: "Registrations (Last 7 Days)",
+              data: values,
+              backgroundColor: "rgba(0,123,255,0.4)",
+              borderColor: "#007bff",
+              borderWidth: 1
+            }]
+          },
+          options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+
+      } catch (err) {
+        console.error("Error fetching analytics:", err);
+      }
+    }
+
+    // Download Excel
+    window.downloadExcel = function () {
+      const wb = XLSX.utils.book_new();
+      const summary = [
+        { Metric: "Total Users", Value: document.getElementById("totalUsers").innerText },
+        { Metric: "Total Registrations", Value: document.getElementById("totalRegistrations").innerText },
+        { Metric: "New Registrations Today", Value: document.getElementById("todayRegistrations").innerText },
+        { Metric: "Active Users (7 days)", Value: document.getElementById("activeUsers").innerText },
+        { Metric: "Inactive Users (7 days)", Value: document.getElementById("inactiveUsers").innerText },
+        { Metric: "Most Used Bot", Value: document.getElementById("mostUsedBot").innerText }
+      ];
+      const ws = XLSX.utils.json_to_sheet(summary);
+      XLSX.utils.book_append_sheet(wb, ws, "Summary");
+      XLSX.writeFile(wb, "Arnav_Analytics.xlsx");
+    };
+
+    // ADMIN INITIAL FIX: display first letter from displayName or email
+    onAuthStateChanged(auth, user => {
+      const initialDiv = document.getElementById("adminInitials");
+      if (user) {
+        const nameSource = user.displayName || user.email || "A";
+        initialDiv.innerText = nameSource[0].toUpperCase();
+      } else {
+        initialDiv.innerText = "A"; // fallback
+      }
+    });
+
+    loadAnalytics();
+  </script>
+</body>
+</html>

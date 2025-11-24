@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Voice Setup</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f6f8;
+    }
+
+    /* Header Styling */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #070707;
+      color: white;
+      padding: 10px 30px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #topVideo {
+      width: 70px;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+    }
+
+    .profile-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .profile-initials {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background: white;
+      color: black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      border: 2px solid white;
+      font-size: 16px;
+    }
+
+    .home-btn {
+      background: white;
+      color: #4285f4;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .home-btn:hover {
+      background: #e3e3e3;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 100px);
+      gap: 30px;
+    }
+
+    .voice-card {
+      background: white;
+      border-radius: 16px;
+      padding: 30px 50px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      width: 500px;
+      text-align: center;
+    }
+
+    .voice-card h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .audio-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      text-align: left;
+      margin-top: 10px;
+    }
+
+    .audio-item {
+      background: #f9f9f9;
+      border-radius: 8px;
+      padding: 10px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    button {
+      background: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #3367d6;
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 600px) {
+      #topVideo {
+        width: 50px;
+      }
+
+      .voice-card {
+        width: 90%;
+        padding: 20px;
+      }
+
+      header {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="header-left">
+      <video id="topVideo" autoplay muted loop>
+        <source src="newvid.mp4" type="video/mp4">
+      </video>
+      <h1>Voice Setup</h1>
+    </div>
+
+    <div class="profile-container">
+      <div id="adminInitials" class="profile-initials">A</div>
+      <button class="home-btn" onclick="goHome()">Home</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="voice-card">
+      <h2>🎀 Girl Voice List</h2>
+      <div id="girlList" class="audio-list"></div>
+    </div>
+
+    <div class="voice-card">
+      <h2>🧑 Boy Voice List</h2>
+      <div id="boyList" class="audio-list"></div>
+    </div>
+  </div>
+
+  <!-- Firebase Auth + Admin Initial -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCcWQRObUHaolagsZSgIzC36uGv7vqL9z0",
+      authDomain: "arnav-50d57.firebaseapp.com",
+      projectId: "arnav-50d57",
+      storageBucket: "arnav-50d57.appspot.com",
+      messagingSenderId: "264853465989",
+      appId: "1:264853465989:web:0f9056a3c714c6ce3cb2ec"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const initials = document.getElementById("adminInitials");
+
+    // Load admin first initial
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const name = user.displayName || user.email || "A";
+        initials.textContent = name.trim()[0].toUpperCase();
+      } else {
+        initials.textContent = "A";
+      }
+    });
+  </script>
+
+  <!-- Voice List Script -->
+  <script>
+    const girlAudios = [
+      'audio/girl.audio/ricaarrived.m4a',
+      'audio/girl.audio/ricacomefollow.m4a',
+      'audio/girl.audio/ricadoyouknowCCAvision.m4a',
+      'audio/girl.audio/ricafollowline.m4a',
+      'audio/girl.audio/ricahowaboutccamission.m4a',
+      'audio/girl.audio/ricamission.m4a',
+      'audio/girl.audio/ricamyfriend.m4a',
+      'audio/girl.audio/ricanavy.m4a',
+      'audio/girl.audio/ricavision.m4a',
+      'audio/girl.audio/ricawhatswrong.m4a'
+    ];
+
+    const boyAudios = [
+      'audio/boy.audio/sieccamission.m4a',
+      'audio/boy.audio/sieccavision.m4a',
+      'audio/boy.audio/siecomefollow.m4a',
+      'audio/boy.audio/siedoyouknow.m4a',
+      'audio/boy.audio/siefollowtheline.m4a',
+      'audio/boy.audio/siehowaboutccamission.m4a',
+      'audio/boy.audio/siemyfriend.m4a',
+      'audio/boy.audio/sienavy.m4a',
+      'audio/boy.audio/siewearehere.m4a',
+      'audio/boy.audio/siewhatswrong.m4a'
+    ];
+
+    let currentAudio = null;
+
+    function renderList(list, containerId) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+
+      list.forEach(src => {
+        const fileName = src.split('/').pop();
+        const div = document.createElement('div');
+        div.className = 'audio-item';
+
+        const name = document.createElement('span');
+        name.textContent = fileName;
+
+        const playBtn = document.createElement('button');
+        playBtn.textContent = '▶ Play';
+        playBtn.onclick = () => togglePlay(src, playBtn);
+
+        div.appendChild(name);
+        div.appendChild(playBtn);
+        container.appendChild(div);
+      });
+    }
+
+    function togglePlay(src, btn) {
+      if (currentAudio && !currentAudio.paused) {
+        currentAudio.pause();
+        currentAudio = null;
+        btn.textContent = '▶ Play';
+        return;
+      }
+
+      currentAudio = new Audio(src);
+      currentAudio.play();
+      btn.textContent = '⏹ Stop';
+
+      currentAudio.onended = () => {
+        btn.textContent = '▶ Play';
+      };
+    }
+
+    function goHome() {
+      window.location.href = "update.html";
+    }
+
+    renderList(girlAudios, 'girlList');
+    renderList(boyAudios, 'boyList');
+  </script>
+
+</body>
+</html>

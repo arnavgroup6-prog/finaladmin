@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Users</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f6f8;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #375534;
+      color: white;
+      padding: 15px 30px;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo-video { width: 70px; height: 70px; border-radius: 10px; object-fit: cover; }
+    h2 { margin: 0; font-size: 26px; }
+    .profile-container { display: flex; align-items: center; gap: 15px; }
+
+    /* Circle showing first letter */
+    .profile-initial {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background-color: #ffffff;
+      color: #375534;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 20px;
+      border: 2px solid white;
+      text-transform: uppercase;
+    }
+
+    .home-btn {
+      background: white; color: #4285f4; border: none; border-radius: 6px;
+      padding: 8px 14px; cursor: pointer; font-weight: bold; transition: 0.2s;
+    }
+    .home-btn:hover { background: #e3e3e3; }
+
+    #searchBox {
+      display: block; margin: 30px auto 10px auto; padding: 10px; width: 50%;
+      border-radius: 6px; border: 1px solid #ccc;
+    }
+
+    table {
+      border-collapse: collapse; width: 95%; margin: 20px auto; background: white;
+      border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden;
+    }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th { background-color: #f2f2f2; cursor: pointer; font-weight: bold; }
+
+    .status-circle { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+    .online { background-color: green; animation: blink 1s infinite; }
+    .offline { background-color: red; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .menu-button {
+      background: none; border: none; font-size: 20px; cursor: pointer;
+    }
+
+    /* GLOBAL MENU */
+    .action-menu {
+      position: absolute;
+      display: none;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      padding: 6px 0;
+      z-index: 9999;
+      width: 150px;
+    }
+    .action-menu div {
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+    .action-menu div:hover {
+      background: #f1f1f1;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <video class="logo-video" autoplay loop muted playsinline>
+        <source src="newvid.mp4" type="video/mp4">
+      </video>
+      <h2>Users</h2>
+    </div>
+    <div class="profile-container">
+      <div id="profileInitial" class="profile-initial">A</div>
+      <button class="home-btn" onclick="goHome()">Home</button>
+    </div>
+  </header>
+
+  <input type="text" id="searchBox" placeholder="Search by name, email, or student ID..." onkeyup="filterTable()">
+
+  <table id="userTable">
+    <thead>
+      <tr>
+        <th>CCA ID</th>
+        <th>Name ⬍</th>
+        <th>Email ⬍</th>
+        <th>Bot Name</th>
+        <th>Voice Type</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="userTableBody"></tbody>
+  </table>
+
+  <!-- GLOBAL MENU -->
+  <div id="globalMenu" class="action-menu">
+    <div id="menuEdit"> Edit</div>
+    <div id="menuReset"> Reset Password</div>
+    <div id="menuDelete"> Delete</div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, getDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+    import { getAuth, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCcWQRObUHaolagsZSgIzC36uGv7vqL9z0",
+      authDomain: "arnav-50d57.firebaseapp.com",
+      databaseURL: "https://arnav-50d57-default-rtdb.firebaseio.com",
+      projectId: "arnav-50d57",
+      storageBucket: "arnav-50d57.appspot.com",
+      messagingSenderId: "264853465989",
+      appId: "1:264853465989:web:0f9056a3c714c6ce3cb2ec",
+      measurementId: "G-TFB7T6DG0R"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const rtdb = getDatabase(app);
+    const auth = getAuth(app);
+
+    // DISPLAY ADMIN INITIAL
+    onAuthStateChanged(auth, (user) => {
+      const el = document.getElementById("profileInitial");
+      if (!el) return;
+
+      if (user) {
+        const name = user.displayName || user.email || "Admin";
+        el.textContent = name.trim()[0].toUpperCase();
+      } else {
+        el.textContent = "A";
+      }
+    });
+
+    let allUsers = [];
+
+    // Fetch bot + voice info
+    async function getBotAndVoiceInfo(userId) {
+      let botData = { botName: "N/A" };
+      let voiceData = { genderVoice: "N/A", voiceType: "N/A" };
+
+      try {
+        const botDocRef = doc(db, "Users", userId, "BotCustomization", "defaultBot");
+        const botSnap = await getDoc(botDocRef);
+        if (botSnap.exists()) botData = botSnap.data();
+
+        const voiceDocRef = doc(db, "Users", userId, "Voice", "defaultVoice");
+        const voiceSnap = await getDoc(voiceDocRef);
+        if (voiceSnap.exists()) voiceData = voiceSnap.data();
+      } catch (err) {
+        console.error("Error getting bot/voice info:", err);
+      }
+
+      return {
+        botName: botData.botName || "N/A",
+        genderVoice: voiceData.genderVoice || "N/A",
+        voiceType: voiceData.voiceType || voiceData.genderVoice || "N/A"
+      };
+    }
+
+    // Load users
+    async function loadUsers() {
+      try {
+        const snapshot = await getDocs(collection(db, "Users"));
+        const users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        allUsers = [];
+        for (const user of users) {
+          const extras = await getBotAndVoiceInfo(user.id);
+          allUsers.push({ ...user, ...extras });
+        }
+
+        renderTable();
+        listenToPresence();
+      } catch (err) {
+        console.error("Error loading users:", err);
+      }
+    }
+
+    // Render table
+    function renderTable() {
+      const tbody = document.getElementById("userTableBody");
+      tbody.innerHTML = "";
+
+      allUsers.forEach(user => {
+        const ccaID = user["CCA ID"] || user.id;
+        const name = user["Name"] || "No name";
+        const email = user["Email"] || "No email";
+
+        const voiceHTML = `
+          <div>
+            <strong>${user.voiceType}</strong><br>
+            <small style="color: gray;">${user.genderVoice}</small>
+          </div>
+        `;
+
+        const row = document.createElement("tr");
+        row.setAttribute("data-id", user.id);
+        row.innerHTML = `
+          <td>${ccaID}</td>
+          <td>${name}</td>
+          <td>${email}</td>
+          <td>${user.botName}</td>
+          <td>${voiceHTML}</td>
+          <td id="status-${user.id}">
+            <span class="status-circle offline"></span>Offline
+          </td>
+          <td>
+            <button class="menu-button" onclick="openGlobalMenu(event, '${user.id}')">⋮</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Presence listener
+    function listenToPresence() {
+      const statusRef = ref(rtdb, "/status");
+      onValue(statusRef, snapshot => {
+        const statusData = snapshot.val() || {};
+        for (const [uid, data] of Object.entries(statusData)) {
+          const cell = document.getElementById(`status-${uid}`);
+          if (cell) {
+            cell.innerHTML = data.online
+              ? `<span class="status-circle online"></span>Online`
+              : `<span class="status-circle offline"></span>Offline`;
+          }
+        }
+      });
+    }
+
+    // ---- GLOBAL MENU LOGIC ----
+
+    let selectedUserId = null;
+    const globalMenu = document.getElementById("globalMenu");
+
+    window.openGlobalMenu = function (event, userId) {
+      selectedUserId = userId;
+
+      const rect = event.target.getBoundingClientRect();
+      let left = rect.right - 150;
+      if (left + 150 > window.innerWidth) left = window.innerWidth - 160;
+      if (left < 8) left = 8;
+
+      globalMenu.style.left = left + "px";
+      globalMenu.style.top = rect.top + window.scrollY + 25 + "px";
+
+      globalMenu.style.display = "block";
+    };
+
+    window.addEventListener("click", function (e) {
+      if (!e.target.closest('#globalMenu') && !e.target.matches('.menu-button')) {
+        globalMenu.style.display = "none";
+      }
+    });
+
+    document.getElementById("menuEdit").onclick = () => {
+      globalMenu.style.display = "none";
+      editUser(selectedUserId);
+    };
+
+    document.getElementById("menuReset").onclick = () => {
+      globalMenu.style.display = "none";
+      resetPassword(selectedUserId);
+    };
+
+    document.getElementById("menuDelete").onclick = () => {
+      globalMenu.style.display = "none";
+      deleteUser(selectedUserId);
+    };
+
+    // Edit user
+    window.editUser = async function (id) {
+      const user = allUsers.find(u => u.id === id);
+      if (!user) return alert("User not found!");
+
+      const newName = prompt("Enter new name:", user["Name"] || "");
+      const newEmail = prompt("Enter new email:", user["Email"] || "");
+      const newccaID = prompt("Enter new CCA ID:", user["CCA ID"] || "");
+
+      if (newName && newEmail && newccaID) {
+        try {
+          await updateDoc(doc(db, "Users", id), {
+            "Name": newName,
+            "Email": newEmail,
+            "CCA ID": newccaID
+          });
+
+          alert("✔ User updated!");
+          loadUsers();
+        } catch (err) {
+          console.error(err);
+          alert("Error updating user: " + err.message);
+        }
+      }
+    };
+
+    // Reset password - Firebase Auth
+    window.resetPassword = async function (id) {
+      if (!id) return alert("No user selected.");
+      try {
+        const userSnap = await getDoc(doc(db, "Users", id));
+        if (!userSnap.exists()) return alert("User not found in Firestore.");
+        const userEmail = userSnap.data().Email;
+        if (!userEmail) return alert("No email set for this user.");
+        if (!confirm(`Send password reset email to ${userEmail}?`)) return;
+        await sendPasswordResetEmail(auth, userEmail);
+        alert("✅ Password reset email sent to " + userEmail);
+      } catch (err) {
+        console.error(err);
+        alert("Error sending reset email: " + (err.message || err));
+      }
+    };
+
+    window.deleteUser = async function (id) {
+      if (!id) return;
+      if (!confirm("Are you sure you want to delete this user?")) return;
+      try {
+        await deleteDoc(doc(db, "Users", id));
+        alert("🗑 User deleted!");
+        loadUsers();
+      } catch (err) {
+        console.error(err);
+        alert("Error deleting user: " + err.message);
+      }
+    };
+
+    // Search filter
+    window.filterTable = function () {
+      const q = document.getElementById("searchBox").value.toLowerCase();
+      const filtered = allUsers.filter(u =>
+        (u["Name"] || "").toLowerCase().includes(q) ||
+        (u["Email"] || "").toLowerCase().includes(q) ||
+        (u["CCA ID"] || "").toLowerCase().includes(q)
+      );
+
+      const tbody = document.getElementById("userTableBody");
+      tbody.innerHTML = "";
+
+      filtered.forEach(user => {
+        const voiceHTML = `
+          <div>
+            <strong>${user.voiceType}</strong><br>
+            <small style="color: gray;">${user.genderVoice}</small>
+          </div>
+        `;
+        const row = document.createElement("tr");
+        row.setAttribute("data-id", user.id);
+        row.innerHTML = `
+          <td>${user["CCA ID"] || user.id}</td>
+          <td>${user["Name"] || "No name"}</td>
+          <td>${user["Email"] || "No email"}</td>
+          <td>${user.botName}</td>
+          <td>${voiceHTML}</td>
+          <td id="status-${user.id}">
+            <span class="status-circle offline"></span>Offline
+          </td>
+          <td>
+            <button class="menu-button" onclick="openGlobalMenu(event, '${user.id}')">⋮</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    };
+
+    // Go home
+    window.goHome = function () {
+      window.location.href = "home.html";
+    };
+
+    // initial load
+    loadUsers();
+  </script>
+
+</body>
+</html>

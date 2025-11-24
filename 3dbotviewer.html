@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admin 3D View</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:0; background:#f4f6f8; }
+  header { display:flex; align-items:center; justify-content:space-between; background:#375534; color:white; padding:15px 30px; }
+  .header-left { display:flex; align-items:center; gap:12px; }
+  .logo-video { width:70px; height:70px; border-radius:10px; object-fit:cover; }
+  h2 { margin:0; font-size:26px; }
+  .profile-container { display:flex; align-items:center; gap:15px; }
+  .profile-initial { width:45px; height:45px; border-radius:50%; background:white; color:#375534; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:20px; border:2px solid white; text-transform:uppercase; }
+  .home-btn { background:white; color:#4285f4; border:none; border-radius:6px; padding:8px 14px; cursor:pointer; font-weight:bold; transition:0.2s; }
+  .home-btn:hover { background:#e3e3e3; }
+  .video-container { width:95%; margin:30px auto; display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+  .video-card { background:white; padding:15px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); text-align:center; }
+  video { width:100%; border-radius:10px; }
+  .toggle-btn { margin-top:10px; padding:10px 15px; font-size:22px; border:none; border-radius:8px; background:#375534; color:white; cursor:pointer; font-weight:bold; }
+  .toggle-btn:hover { background:#2a4028; }
+  @media(max-width:900px) { .video-container { grid-template-columns:repeat(2,1fr); } }
+  @media(max-width:600px) { .video-container { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <video class="logo-video" autoplay loop muted playsinline>
+      <source src="newvid.mp4" type="video/mp4">
+    </video>
+    <h2>3D Viewer</h2>
+  </div>
+  <div class="profile-container">
+    <div id="profileInitial" class="profile-initial">A</div>
+    <button id="homeBtn" class="home-btn">Home</button>
+  </div>
+</header>
+
+<div class="video-container">
+  <div class="video-card">
+    <video id="video1" src="boyblackhair.mp4"></video>
+    <button class="toggle-btn" data-video="video1">▶️</button>
+  </div>
+  <div class="video-card">
+    <video id="video2" src="boybluehair.mp4"></video>
+    <button class="toggle-btn" data-video="video2">▶️</button>
+  </div>
+  <div class="video-card">
+    <video id="video3" src="boyorangehair.mp4"></video>
+    <button class="toggle-btn" data-video="video3">▶️</button>
+  </div>
+  <div class="video-card">
+    <video id="video4" src="boypinkhair.mp4"></video>
+    <button class="toggle-btn" data-video="video4">▶️</button>
+  </div>
+  <div class="video-card">
+    <video id="video5" src="girlblackhair.mp4"></video>
+    <button class="toggle-btn" data-video="video5">▶️</button>
+  </div>
+  <div class="video-card">
+    <video id="video6" src="girlbluehair.mp4"></video>
+    <button class="toggle-btn" data-video="video6">▶️</button>
+  </div>
+  <div class="video-card">
+    <video id="video7" src="girlpinkhair.mp4"></video>
+    <button class="toggle-btn" data-video="video7">▶️</button>
+  </div>
+  <div class="video-card">
+    <video id="video8" src="girlwhitehair.mp4"></video>
+    <button class="toggle-btn" data-video="video8">▶️</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyCcWQRObUHaolagsZSgIzC36uGv7vqL9z0",
+  authDomain: "arnav-50d57.firebaseapp.com",
+  projectId: "arnav-50d57",
+  storageBucket: "arnav-50d57.appspot.com",
+  messagingSenderId: "264853465989",
+  appId: "1:264853465989:web:0f9056a3c714c6ce3cb2ec"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+const profileDiv = document.getElementById("profileInitial");
+
+// Show admin initial if logged in
+onAuthStateChanged(auth, user => {
+  if (user) {
+    profileDiv.innerText = (user.displayName?.[0] || user.email?.[0] || "A").toUpperCase();
+  } else {
+    window.location.replace("index.html");
+  }
+});
+
+// Home button
+document.getElementById("homeBtn").addEventListener("click", () => {
+  window.location.href = "update.html";
+});
+
+// Play/pause for all 8 videos
+document.querySelectorAll(".toggle-btn").forEach(btn => {
+  const videoId = btn.dataset.video;
+  const video = document.getElementById(videoId);
+  btn.addEventListener("click", () => {
+    if (video.paused) {
+      video.play();
+      btn.textContent = "⏸️";
+    } else {
+      video.pause();
+      btn.textContent = "▶️";
+    }
+    video.onended = () => btn.textContent = "▶️";
+  });
+});
+</script>
+
+</body>
+</html>
